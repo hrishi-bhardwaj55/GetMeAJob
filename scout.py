@@ -1,6 +1,7 @@
 import time
 import random
 import urllib.parse
+from datetime import datetime, timezone
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 import config
@@ -14,7 +15,7 @@ USER_AGENTS = [
 ]
 
 class Job:
-    def __init__(self, job_id, title, company, location, application_link, salary="Not Listed", description=""):
+    def __init__(self, job_id, title, company, location, application_link, salary="Not Listed", description="", posted_at=None):
         self.job_id = job_id
         self.title = title
         self.company = company
@@ -22,10 +23,11 @@ class Job:
         self.application_link = application_link
         self.salary = salary
         self.description = description
+        self.posted_at = posted_at          # datetime object (UTC)
         # Parsed from full description by FilterAgent
-        self.parsed_salary = None       # e.g. "$120K - $180K"
-        self.parsed_experience = None   # e.g. "3+ years of experience"
-        self.parsed_skills = []         # e.g. ["Python", "AWS", "Docker"]
+        self.parsed_salary = None
+        self.parsed_experience = None
+        self.parsed_skills = []
 
 class ScoutAgent:
     def __init__(self):
@@ -95,6 +97,7 @@ class ScoutAgent:
                         location_el = card.find("span", class_="job-search-card__location")
                         salary_el = card.find("span", class_="job-search-card__salary-info")
                         link_el = card.find("a", class_="base-card__full-link")
+                        time_el = card.find("time")
                         
                         title = title_el.text.strip() if title_el else "Unknown Title"
                         company = company_el.text.strip() if company_el else "Unknown Company"
@@ -102,9 +105,15 @@ class ScoutAgent:
                         salary = salary_el.text.strip() if salary_el else "Not Listed"
                         link = link_el["href"].split("?")[0] if link_el and "href" in link_el.attrs else ""
                         
-                        # We won't fetch full description yet to save time and reduce detection risk. 
-                        # We just instantiate the job object with early data.
-                        jobs_found.append(Job(job_id, title, company, location, link, salary, description=""))
+                        # Parse the post datetime from the <time datetime="..."> attribute
+                        posted_at = None
+                        if time_el and time_el.get("datetime"):
+                            try:
+                                posted_at = datetime.fromisoformat(time_el["datetime"].replace("Z", "+00:00"))
+                            except ValueError:
+                                pass
+                        
+                        jobs_found.append(Job(job_id, title, company, location, link, salary, description="", posted_at=posted_at))
                         
                 except Exception as e:
                     print(f"[Scout Agent] Error fetching jobs for {keyword}: {e}")

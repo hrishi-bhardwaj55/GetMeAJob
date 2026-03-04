@@ -1,4 +1,35 @@
 from discord_webhook import DiscordWebhook, DiscordEmbed
+from datetime import datetime, timezone
+
+
+def _format_posted_time(posted_at):
+    """Returns (absolute_str, relative_str) for a job's posted_at datetime."""
+    if not posted_at:
+        return None, None
+    
+    now = datetime.now(tz=timezone.utc)
+    # Ensure posted_at is timezone-aware
+    if posted_at.tzinfo is None:
+        posted_at = posted_at.replace(tzinfo=timezone.utc)
+    
+    delta = now - posted_at
+    total_seconds = int(delta.total_seconds())
+    
+    if total_seconds < 60:
+        relative = f"{total_seconds}s ago"
+    elif total_seconds < 3600:
+        mins = total_seconds // 60
+        relative = f"{mins} min ago" if mins == 1 else f"{mins} mins ago"
+    elif total_seconds < 86400:
+        hours = total_seconds // 3600
+        relative = f"{hours} hr ago" if hours == 1 else f"{hours} hrs ago"
+    else:
+        days = total_seconds // 86400
+        relative = f"{days} day ago" if days == 1 else f"{days} days ago"
+    
+    absolute = posted_at.strftime("%b %d, %Y %I:%M %p UTC")
+    return absolute, relative
+
 
 class NotifierAgent:
     def __init__(self, webhook_url, bot_name="Job Intelligence Bot"):
@@ -32,6 +63,16 @@ class NotifierAgent:
             or "Not Listed"
         )
         embed.add_embed_field(name="💰 Salary", value=salary_display, inline=True)
+
+        # Posted time
+        posted_at = getattr(job, "posted_at", None)
+        absolute_time, relative_time = _format_posted_time(posted_at)
+        if absolute_time:
+            embed.add_embed_field(
+                name="🕐 Posted",
+                value=f"{relative_time}\n{absolute_time}",
+                inline=True
+            )
 
         # ── Parsed fields (from full description) ─────────────────────────────
         experience = getattr(job, "parsed_experience", None)
