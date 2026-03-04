@@ -5,6 +5,7 @@ from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 import time
 import random
+import job_parser
 
 # Thread-local storage so each thread gets its own Playwright browser
 _thread_local = threading.local()
@@ -81,6 +82,11 @@ class FilterAgent:
             print(f"[Filter] ⚠️  Couldn't fetch description for {job.title} @ {job.company} — passing through.")
             job.description = "Description unavailable (LinkedIn blocked fetch)"
             return job, 100.0
+
+        # ── Enrich the job object with parsed metadata ──
+        job.parsed_salary = job_parser.extract_salary(description)
+        job.parsed_experience = job_parser.extract_experience(description)
+        job.parsed_skills = job_parser.extract_skills(description)
 
         desc_lower = description.lower()
         title_lower = job.title.lower()

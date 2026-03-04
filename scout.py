@@ -22,6 +22,10 @@ class Job:
         self.application_link = application_link
         self.salary = salary
         self.description = description
+        # Parsed from full description by FilterAgent
+        self.parsed_salary = None       # e.g. "$120K - $180K"
+        self.parsed_experience = None   # e.g. "3+ years of experience"
+        self.parsed_skills = []         # e.g. ["Python", "AWS", "Docker"]
 
 class ScoutAgent:
     def __init__(self):
