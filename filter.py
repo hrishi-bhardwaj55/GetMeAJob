@@ -76,7 +76,11 @@ class FilterAgent:
         job.description = description
 
         if not description:
-            return job, 0.0
+            # Description fetch failed (likely LinkedIn login wall/CAPTCHA).
+            # Pass the job through rather than silently rejecting a potentially great role.
+            print(f"[Filter] ⚠️  Couldn't fetch description for {job.title} @ {job.company} — passing through.")
+            job.description = "Description unavailable (LinkedIn blocked fetch)"
+            return job, 100.0
 
         desc_lower = description.lower()
         title_lower = job.title.lower()
