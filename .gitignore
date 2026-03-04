@@ -1,0 +1,19 @@
+# Environments
+venv/
+env/
+.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Project specific
+jobs.db
+jobs_output.txt
+
+# IDEs / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
