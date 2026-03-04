@@ -75,9 +75,20 @@ class ScoutAgent:
                     self._human_delay(3, 7)
                     
                     # Scroll down to load more jobs (simulate human behavior)
-                    for _ in range(3):
-                        page.evaluate("window.scrollBy(0, document.body.scrollHeight/3);")
-                        self._human_delay(1, 3)
+                    # Increased from 3 to 10 to grab more than 70 jobs
+                    for _ in range(10):
+                        page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+                        self._human_delay(1, 2)
+                        
+                        # Try to click the "See more jobs" button if it appears
+                        try:
+                            # LinkedIn uses various classes for this button over time
+                            see_more_btn = page.query_selector("button.infinite-scroller__show-more-button")
+                            if see_more_btn and see_more_btn.is_visible():
+                                see_more_btn.click()
+                                self._human_delay(1, 2)
+                        except Exception:
+                            pass
                         
                     content = page.content()
                     soup = BeautifulSoup(content, "html.parser")

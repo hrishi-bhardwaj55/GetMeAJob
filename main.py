@@ -25,7 +25,14 @@ def run_profile(profile, dry_run=False):
     print(f"\n[System] ▶ Starting Profile: {bot_name}")
 
     scout = ScoutAgent()
-    filter_agent = FilterAgent(criteria, max_workers=5)
+    
+    if profile.get("use_ai", False):
+        from ai_filter import AiFilterAgent
+        filter_agent = AiFilterAgent(criteria, max_workers=5, api_key=getattr(config, "OPENAI_API_KEY", ""))
+
+    else:
+        filter_agent = FilterAgent(criteria, max_workers=5)
+        
     notifier = NotifierAgent(webhook, bot_name)
 
     # 1. Scout
@@ -55,7 +62,9 @@ def run_profile(profile, dry_run=False):
             else:
                 rejected += 1
         else:
-            print(f"[Dry Run] {bot_name} → Would notify: {job.title} at {job.company}")
+            summary = getattr(job, "job_summary", "Regex Passed")
+            gap = getattr(job, "missing_from_resume", "None") 
+            print(f"[Dry Run] {bot_name} → Would notify: {job.title} at {job.company} | AI Summary: {summary[:50]} | Gap: {gap[:50]}...")
             sent += 1
 
     # Jobs that were found but didn't match criteria
