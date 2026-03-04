@@ -64,15 +64,10 @@ class NotifierAgent:
         )
         embed.add_embed_field(name="💰 Salary", value=salary_display, inline=True)
 
-        # Posted time
-        posted_at = getattr(job, "posted_at", None)
-        absolute_time, relative_time = _format_posted_time(posted_at)
-        if absolute_time:
-            embed.add_embed_field(
-                name="🕐 Posted",
-                value=f"{relative_time}\n{absolute_time}",
-                inline=True
-            )
+        # Posted time — use LinkedIn's own relative text (e.g. "32 minutes ago")
+        posted_time = getattr(job, "posted_time_text", None)
+        if posted_time:
+            embed.add_embed_field(name="🕐 Posted", value=posted_time, inline=True)
 
         # ── Parsed fields (from full description) ─────────────────────────────
         experience = getattr(job, "parsed_experience", None)

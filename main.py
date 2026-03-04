@@ -24,7 +24,6 @@ def run_profile(profile, dry_run=False):
 
     print(f"\n[System] ▶ Starting Profile: {bot_name}")
 
-    # Each profile gets its own Scout, Filter, and Notifier instance
     scout = ScoutAgent()
     filter_agent = FilterAgent(criteria, max_workers=5)
     notifier = NotifierAgent(webhook, bot_name)
@@ -57,22 +56,26 @@ def run_profile(profile, dry_run=False):
     print(f"[System] ✅ {bot_name} complete.")
 
 
-def run_job_search(dry_run=False):
+def run_job_search(dry_run=False, bot_tags=None):
     print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ⚡ Starting Parallel Job Search Cycle...")
 
     if not getattr(config, "JOB_PROFILES", None):
         print("[System] No JOB_PROFILES defined in config.py. Exiting.")
         return
 
-    # Run all bot profiles concurrently
-    with ThreadPoolExecutor(max_workers=len(config.JOB_PROFILES)) as executor:
-        futures = [
-            executor.submit(run_profile, profile, dry_run)
-            for profile in config.JOB_PROFILES
-        ]
-        wait(futures)
+    # Filter profiles by tag if --bots was specified
+    profiles = config.JOB_PROFILES
+    if bot_tags:
+        tags = {t.strip().lower() for t in bot_tags.split(",")}
+        profiles = [p for p in profiles if p.get("tag", "").lower() in tags]
+        if not profiles:
+            print(f"[System] No profiles matched tags: {bot_tags}. Valid tags: {[p.get('tag') for p in config.JOB_PROFILES]}")
+            return
+        print(f"[System] Running selected bots: {[p['name'] for p in profiles]}")
 
-        # Surface any exceptions from threads
+    with ThreadPoolExecutor(max_workers=len(profiles)) as executor:
+        futures = [executor.submit(run_profile, profile, dry_run) for profile in profiles]
+        wait(futures)
         for future in futures:
             try:
                 future.result()
@@ -86,17 +89,21 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Real-time Job Intelligence Agent")
     parser.add_argument("--dry-run", action="store_true", help="Run once without sending notifications")
     parser.add_argument("--run-once", action="store_true", help="Run a single cycle without scheduling")
+    parser.add_argument("--bots", type=str, default=None,
+                        help="Comma-separated bot tags to run (e.g. --bots sde,ai). Runs all if omitted.")
     args = parser.parse_args()
 
     if args.dry_run or args.run_once:
         print(f"[System] Executing single run (Dry Run: {args.dry_run})...")
-        run_job_search(dry_run=args.dry_run)
+        run_job_search(dry_run=args.dry_run, bot_tags=args.bots)
         db.close()
     else:
         print(f"[System] Scheduling job search every {config.POLLING_INTERVAL_MINUTES} minutes...")
-        run_job_search()
+        run_job_search(bot_tags=args.bots)
 
-        schedule.every(config.POLLING_INTERVAL_MINUTES).minutes.do(run_job_search)
+        schedule.every(config.POLLING_INTERVAL_MINUTES).minutes.do(
+            run_job_search, bot_tags=args.bots
+        )
 
         try:
             while True:
@@ -106,3 +113,4 @@ if __name__ == "__main__":
             print("[System] Terminating job intelligence agent...")
         finally:
             db.close()
+

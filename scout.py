@@ -1,7 +1,6 @@
 import time
 import random
 import urllib.parse
-from datetime import datetime, timezone
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 import config
@@ -15,7 +14,7 @@ USER_AGENTS = [
 ]
 
 class Job:
-    def __init__(self, job_id, title, company, location, application_link, salary="Not Listed", description="", posted_at=None):
+    def __init__(self, job_id, title, company, location, application_link, salary="Not Listed", description="", posted_time_text=None):
         self.job_id = job_id
         self.title = title
         self.company = company
@@ -23,7 +22,7 @@ class Job:
         self.application_link = application_link
         self.salary = salary
         self.description = description
-        self.posted_at = posted_at          # datetime object (UTC)
+        self.posted_time_text = posted_time_text  # e.g. "32 minutes ago" (from LinkedIn)
         # Parsed from full description by FilterAgent
         self.parsed_salary = None
         self.parsed_experience = None
@@ -105,15 +104,11 @@ class ScoutAgent:
                         salary = salary_el.text.strip() if salary_el else "Not Listed"
                         link = link_el["href"].split("?")[0] if link_el and "href" in link_el.attrs else ""
                         
-                        # Parse the post datetime from the <time datetime="..."> attribute
-                        posted_at = None
-                        if time_el and time_el.get("datetime"):
-                            try:
-                                posted_at = datetime.fromisoformat(time_el["datetime"].replace("Z", "+00:00"))
-                            except ValueError:
-                                pass
+                        # Use LinkedIn's own relative time text (e.g. "32 minutes ago")
+                        # The datetime attribute only has the date, not the time, so we avoid it.
+                        posted_time_text = time_el.get_text(strip=True) if time_el else None
                         
-                        jobs_found.append(Job(job_id, title, company, location, link, salary, description="", posted_at=posted_at))
+                        jobs_found.append(Job(job_id, title, company, location, link, salary, description="", posted_time_text=posted_time_text))
                         
                 except Exception as e:
                     print(f"[Scout Agent] Error fetching jobs for {keyword}: {e}")
