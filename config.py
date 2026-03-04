@@ -37,7 +37,8 @@ JOB_PROFILES = [
         "criteria": {
             "required_skills": ["Python"],
             "preferred_skills": ["LLMs", "Agentic", "Prompt Engineering"],
-            "excluded_terms": []
+            "excluded_terms": [],
+            "threshold": 40.0
         }
     }
 ]

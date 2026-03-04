@@ -94,14 +94,18 @@ class FilterAgent:
         
         return percentage
 
-    def filter_jobs(self, jobs, threshold_percentage=80.0):
+    def filter_jobs(self, jobs):
         """Receives a list of jobs, evaluates them, and returns ones >= threshold"""
         matched_jobs = []
+        
+        # Look for a custom threshold in the criteria, otherwise default to 80.0
+        custom_threshold = float(self.criteria.get("threshold", 80.0))
+        
         for job in jobs:
             score = self.evaluate_job(job)
-            if score >= threshold_percentage:
-                print(f"[Filter Agent] Match! {job.title} at {job.company} scored {score:.1f}%")
+            if score >= custom_threshold:
+                print(f"[Filter Agent] Match! {job.title} at {job.company} scored {score:.1f}% (Threshold: {custom_threshold}%)")
                 matched_jobs.append(job)
             else:
-                print(f"[Filter Agent] Rejected {job.title} at {job.company} (Score: {score:.1f}%)")
+                print(f"[Filter Agent] Rejected {job.title} at {job.company} (Score: {score:.1f}% < {custom_threshold}%)")
         return matched_jobs
