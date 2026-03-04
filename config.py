@@ -26,9 +26,8 @@ MATCH_CRITERIA = {
 }
 
 # 3. Notification Platform Configuration
-# Discord Bot Settings (For Direct Messages)
-DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
-DISCORD_USER_ID = os.getenv("DISCORD_USER_ID", "YOUR_DISCORD_USER_ID_HERE")
+# Discord Webhook Settings (For Server Channels)
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1478799507016781855/dR9SS_CRNuTKsczHzK69sN__mElJZaP1DvpKQZlP9_SKOvZln0bBl32DPlzzIHpAbf7U")
 
 # General Settings
 POLLING_INTERVAL_MINUTES = 60
