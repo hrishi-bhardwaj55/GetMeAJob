@@ -14,7 +14,11 @@ class NotifierAgent:
 
         print(f"[Notifier Agent] Sending Discord notification for {job.title}...")
         
-        webhook = DiscordWebhook(url=self.webhook_url, username=self.bot_name)
+        webhook = DiscordWebhook(
+            url=self.webhook_url, 
+            username=self.bot_name, 
+            rate_limit_retry=True
+        )
 
         embed = DiscordEmbed(title=job.title, url=job.application_link, color="03b2f8")
         embed.set_author(name=job.company)

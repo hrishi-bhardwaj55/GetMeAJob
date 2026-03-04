@@ -56,6 +56,10 @@ class ScoutAgent:
                     "sortBy": "DD"
                 }
                 
+                # Append exact geoId for United States to prevent international contamination
+                if "united states" in location.lower() or location.lower() == "us":
+                    params["geoId"] = "103644278"
+                
                 query_string = urllib.parse.urlencode(params)
                 search_url = f"{self.base_url}{query_string}"
                 

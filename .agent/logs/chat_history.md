@@ -270,3 +270,17 @@ The user wanted stricter scraping (last 2 hours, full-time only). I updated `sco
 - Modified `scout.py` to enforce `f_TPR=r7200` (2 hours).
 - Modified `scout.py` to enforce `f_JT=F` (Full-time only).
 - Added `['part time', 'contract', 'assistant', 'legal'...]` to all `JOB_PROFILES` excluded terms.
+
+
+## [2026-03-04T12:18:14.252538]
+**User Input**:
+but i am still not getting anything on my ai webhook. plus the jobs repeated from the last time we ran. they should not repeat. and I am getting jobs from canada brazil etc fix that
+
+**Agent Reasoning**:
+I investigated three separate issues:
+1. **Discord Rate Limits (Repeating Jobs & Missed Webhooks)**: The system was sending so many webhooks at once that Discord returned a 429 Rate Limit error. Because it threw a 429, `notifier.py` returned False. Consequently, `main.py` skipped the `db.mark_job_processed()` step for those jobs. The next time the loop ran, it saw them as unseen and tried (and failed) again. I fixed this by passing `rate_limit_retry=True` to the `DiscordWebhook` connection block, causing the bot to automatically sleep and retry instead of dropping the payload.
+2. **Canada/Brazil Locations**: LinkedIn's URL parser is notoriously unreliable with text-based locations when no `geoId` is provided. I added a condition in `scout.py` to inject `geoId=103644278` (United States) directly into the scraping URL matrix tightly binding the queries to the USA.
+
+**Actions Taken**:
+- Enabled `rate_limit_retry=True` in `notifier.py`.
+- Hardcoded `geoId=103644278` for 'United States' location queries in `scout.py`.
