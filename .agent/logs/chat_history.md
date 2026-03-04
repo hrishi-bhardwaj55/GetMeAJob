@@ -210,3 +210,37 @@ The user requested to restrict the job search geographically to the United State
 - Added `SEARCH_LOCATION = 'United States'` to `config.py`.
 - Modified `scout.py` to use `config.SEARCH_LOCATION` in the HTTP query parameters.
 - Tracked changes in the task list.
+
+
+## [2026-03-04T11:17:05.923040]
+**User Input**:
+I am also planning to create separate bot for different type of roles lets saay one for software engineer, software architect, senior software engineer, founding engineer, another one for Data scientist, data engineer, data analyst and another for AI roles, AI engineer , AI DEVEloper etc
+
+**Agent Reasoning**:
+The user wants to split the orchestration into multiple distinct 'bots' (which in this architecture translates to search profiles that each route to their own specific webhook). 
+I am switching to PLANNING mode. I have updated the implementation plan to refactor the configuration to use a JOB_PROFILES array where each profile has its own keywords, criteria, and webhook.
+
+**Actions Taken**:
+- Added Multi-Bot Architecture to implementation_plan.md and task.md.
+
+
+## [2026-03-04T11:18:36.583673]
+**Agent Reasoning**:
+The user requested a `Multi-Bot` architecture to separate job categories into different webhooks. I transitioned to execution mode and converted `config.py` into a robust `JOB_PROFILES` array. I then updated `filter.py` and `notifier.py` to accept dynamic arguments instead of reading global configuration data directly. Finally, I rewrote the orchestration loop in `main.py` to loop over every defined profile dynamically.
+
+**Actions Taken**:
+- Converted `config.py` to use `JOB_PROFILES` array.
+- Refactored `FilterAgent` to take criteria dynamically.
+- Refactored `NotifierAgent` to take `webhook_url` and `bot_name` dynamically.
+- Rewrote `run_job_search()` in `main.py` to iterate through the array.
+- Checked off `Multi-Bot Architecture` in `task.md`.
+
+
+## [2026-03-04T11:19:17.315071]
+**Agent Reasoning**:
+I discovered that `test_notification.py` broke because it was still using the old monolithic `NotifierAgent()` constructor. I injected the new parameterized URL and bot name to fix it, and executed the payload. The webhook routed securely. I am now committing the entire Refactor to git.
+
+**Actions Taken**:
+- Fixed `test_notification.py` to pull dynamic bot arguments.
+- Verified dynamic webhook delivery success.
+- Committed codebase via `git commit`.

@@ -4,33 +4,43 @@ import os
 # USER CONFIGURATION REQUIRED
 # -------------------------------------------------------------------
 
-# 1. Keywords for the Scout Agent to search on LinkedIn
-SEARCH_KEYWORDS = [
-    "Software Engineer",
-    "Systems Architect",
-    # Add more keywords here
+# 1. Multi-Bot Job Profiles
+# Define as many bots as you want. Each bot will map to a specific webhook and run its own search.
+JOB_PROFILES = [
+    {
+        "name": "Software Engineering Bot",
+        "keywords": ["Software Engineer", "Software Architect", "Senior Software Engineer", "Founding Engineer"],
+        "location": "United States",
+        "webhook_url": os.getenv("SWE_WEBHOOK_URL", "https://discord.com/api/webhooks/1478799507016781855/dR9SS_CRNuTKsczHzK69sN__mElJZaP1DvpKQZlP9_SKOvZln0bBl32DPlzzIHpAbf7U"),
+        "criteria": {
+            "required_skills": [],
+            "preferred_skills": [],
+            "excluded_terms": []
+        }
+    },
+    {
+        "name": "Data Science Bot",
+        "keywords": ["Data Scientist", "Data Engineer", "Data Analyst"],
+        "location": "United States",
+        "webhook_url": os.getenv("DATA_WEBHOOK_URL", "https://discord.com/api/webhooks/1478799507016781855/dR9SS_CRNuTKsczHzK69sN__mElJZaP1DvpKQZlP9_SKOvZln0bBl32DPlzzIHpAbf7U"),
+        "criteria": {
+            "required_skills": [],
+            "preferred_skills": [],
+            "excluded_terms": []
+        }
+    },
+    {
+        "name": "AI/ML Bot",
+        "keywords": ["AI Engineer", "AI Developer", "Machine Learning Engineer", "AI Roles"],
+        "location": "United States",
+        "webhook_url": os.getenv("AI_WEBHOOK_URL", "https://discord.com/api/webhooks/1478799507016781855/dR9SS_CRNuTKsczHzK69sN__mElJZaP1DvpKQZlP9_SKOvZln0bBl32DPlzzIHpAbf7U"),
+        "criteria": {
+            "required_skills": ["Python"],
+            "preferred_skills": ["LLMs", "Agentic", "Prompt Engineering"],
+            "excluded_terms": []
+        }
+    }
 ]
-
-# Location constraint for the search
-SEARCH_LOCATION = "United States"
-
-# 2. Roles/Criteria for the Filter Agent to match against
-# The Filter Agent will parse job descriptions to calculate a match score.
-# Example: 
-# MATCH_CRITERIA = {
-#     "required_skills": ["Python", "Playwright", "System Architecture"],
-#     "preferred_skills": ["Docker", "AWS"],
-#     "excluded_terms": ["Unpaid", "Internship"]
-# }
-MATCH_CRITERIA = {
-    "required_skills": [],
-    "preferred_skills": [],
-    "excluded_terms": []
-}
-
-# 3. Notification Platform Configuration
-# Discord Webhook Settings (For Server Channels)
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1478799507016781855/dR9SS_CRNuTKsczHzK69sN__mElJZaP1DvpKQZlP9_SKOvZln0bBl32DPlzzIHpAbf7U")
 
 # General Settings
 POLLING_INTERVAL_MINUTES = 60

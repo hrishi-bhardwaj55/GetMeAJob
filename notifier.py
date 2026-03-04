@@ -2,8 +2,9 @@ from discord_webhook import DiscordWebhook, DiscordEmbed
 import config
 
 class NotifierAgent:
-    def __init__(self):
-        self.webhook_url = config.DISCORD_WEBHOOK_URL
+    def __init__(self, webhook_url, bot_name="Job Intelligence Bot"):
+        self.webhook_url = webhook_url
+        self.bot_name = bot_name
 
     def send_notification(self, job):
         """Sends a notification with job details to the configured Discord Webhook."""
@@ -13,7 +14,7 @@ class NotifierAgent:
 
         print(f"[Notifier Agent] Sending Discord notification for {job.title}...")
         
-        webhook = DiscordWebhook(url=self.webhook_url)
+        webhook = DiscordWebhook(url=self.webhook_url, username=self.bot_name)
 
         embed = DiscordEmbed(title=job.title, url=job.application_link, color="03b2f8")
         embed.set_author(name=job.company)

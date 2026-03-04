@@ -6,8 +6,8 @@ import time
 import random
 
 class FilterAgent:
-    def __init__(self):
-        self.criteria = config.MATCH_CRITERIA
+    def __init__(self, criteria_dict):
+        self.criteria = criteria_dict
 
     def _fetch_description(self, url):
         """Fetches the full job description text from a job page URL"""
