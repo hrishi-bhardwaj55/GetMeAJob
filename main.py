@@ -45,13 +45,24 @@ def run_profile(profile, dry_run=False):
     print(f"[System] {bot_name} → {len(matched_jobs)} jobs matched criteria.")
 
     # 4. Notify & DB Write
+    sent, rejected = 0, 0
     for job in matched_jobs:
         if not dry_run:
             success = notifier.send_notification(job)
             if success:
                 db.mark_job_processed(job.job_id)
+                sent += 1
+            else:
+                rejected += 1
         else:
             print(f"[Dry Run] {bot_name} → Would notify: {job.title} at {job.company}")
+            sent += 1
+
+    # Jobs that were found but didn't match criteria
+    skipped = len(new_jobs) - len(matched_jobs)
+
+    if not dry_run:
+        notifier.send_summary(sent=sent, rejected=rejected, skipped=skipped)
 
     print(f"[System] ✅ {bot_name} complete.")
 

@@ -105,3 +105,32 @@ class NotifierAgent:
         except Exception as e:
             print(f"[Notifier Agent] Exception: {e}")
             return False
+
+    def send_summary(self, sent: int, rejected: int, skipped: int):
+        """Sends a compact completion message to Discord after a bot's cycle finishes."""
+        if not self.webhook_url or self.webhook_url == "YOUR_DISCORD_WEBHOOK_HERE":
+            return
+
+        from datetime import datetime, timezone
+        now = datetime.now(tz=timezone.utc).strftime("%b %d, %Y %I:%M %p UTC")
+
+        if sent == 0:
+            color = "808080"  # grey — nothing new
+            title = "✅ Scan Complete — No New Jobs"
+        else:
+            color = "2ecc71"  # green — jobs were sent
+            title = f"✅ Scan Complete — {sent} Job{'s' if sent != 1 else ''} Sent"
+
+        embed = DiscordEmbed(title=title, color=color)
+        embed.add_embed_field(name="📤 Sent",     value=str(sent),     inline=True)
+        embed.add_embed_field(name="❌ Rejected", value=str(rejected), inline=True)
+        embed.add_embed_field(name="⏭ Skipped",  value=str(skipped),  inline=True)
+        embed.set_footer(text=f"Completed at {now}")
+        embed.set_timestamp()
+
+        webhook = DiscordWebhook(url=self.webhook_url, username=self.bot_name, rate_limit_retry=True)
+        webhook.add_embed(embed)
+        try:
+            webhook.execute()
+        except Exception as e:
+            print(f"[Notifier Agent] Failed to send summary: {e}")
