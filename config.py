@@ -11,6 +11,9 @@ SEARCH_KEYWORDS = [
     # Add more keywords here
 ]
 
+# Location constraint for the search
+SEARCH_LOCATION = "United States"
+
 # 2. Roles/Criteria for the Filter Agent to match against
 # The Filter Agent will parse job descriptions to calculate a match score.
 # Example: 

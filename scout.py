@@ -50,7 +50,7 @@ class ScoutAgent:
                 # sortBy=DD -> Most recent
                 params = {
                     "keywords": keyword,
-                    "location": "Worldwide",
+                    "location": config.SEARCH_LOCATION,
                     "f_TPR": "r86400",
                     "sortBy": "DD"
                 }
