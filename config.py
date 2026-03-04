@@ -26,12 +26,9 @@ MATCH_CRITERIA = {
 }
 
 # 3. Notification Platform Configuration
-# Email SMTP Settings (Defaulting to Gmail)
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "YOUR_EMAIL@gmail.com")
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "YOUR_APP_PASSWORD") # Use an App Password if using Gmail
-RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL", "YOUR_RECEIVER_EMAIL@domain.com")
+# Discord Bot Settings (For Direct Messages)
+DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+DISCORD_USER_ID = os.getenv("DISCORD_USER_ID", "YOUR_DISCORD_USER_ID_HERE")
 
 # General Settings
 POLLING_INTERVAL_MINUTES = 60

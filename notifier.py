@@ -1,64 +1,60 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import discord
+import asyncio
 import config
+from discord.ext import commands
 
 class NotifierAgent:
     def __init__(self):
-        self.smtp_server = config.SMTP_SERVER
-        self.smtp_port = config.SMTP_PORT
-        self.sender_email = config.SENDER_EMAIL
-        self.sender_password = config.SENDER_PASSWORD
-        self.receiver_email = config.RECEIVER_EMAIL
+        self.token = config.DISCORD_BOT_TOKEN
+        self.user_id = config.DISCORD_USER_ID
+
+    async def _send_async_notification(self, job):
+        """Asynchronous helper to send the DM"""
+        intents = discord.Intents.default()
+        bot = commands.Bot(command_prefix="!", intents=intents)
+
+        @bot.event
+        async def on_ready():
+            try:
+                # Fetch the user to DM based on their ID
+                user = await bot.fetch_user(self.user_id)
+                if user:
+                    embed = discord.Embed(title=job.title, url=job.application_link, color=0x03b2f8)
+                    embed.set_author(name=job.company)
+                    embed.add_field(name="Location", value=job.location, inline=True)
+                    embed.add_field(name="Salary", value=job.salary, inline=True)
+                    
+                    desc_snippet = job.description[:250] + "..." if len(job.description) > 250 else job.description
+                    if desc_snippet:
+                        embed.add_field(name="Description Snippet", value=desc_snippet, inline=False)
+                        
+                    embed.set_footer(text=f"Job ID: {job.job_id}")
+                    
+                    await user.send(embed=embed)
+                    print(f"[Notifier Agent] Sent DM to {user.name} for {job.title}")
+                else:
+                    print(f"[Notifier Agent] Could not find user with ID {self.user_id}")
+            except Exception as e:
+                print(f"[Notifier Agent] Error sending DM: {e}")
+            finally:
+                # Close the bot connection after sending
+                await bot.close()
+                
+        # Start the bot
+        await bot.start(self.token)
 
     def send_notification(self, job):
-        """Sends an email notification with job details."""
-        if self.sender_email == "YOUR_EMAIL@gmail.com" or self.receiver_email == "YOUR_RECEIVER_EMAIL@domain.com":
-            print(f"[Notifier Agent] Email settings not configured. Cannot send notification for: {job.title}")
+        """Synchronous wrapper to be called by main.py"""
+        if self.token == "YOUR_BOT_TOKEN_HERE" or self.user_id == "YOUR_DISCORD_USER_ID_HERE":
+            print(f"[Notifier Agent] Discord Bot not configured. Cannot send DM for: {job.title}")
             return False
-
-        print(f"[Notifier Agent] Sending Email for {job.title} to {self.receiver_email}...")
+            
+        print(f"[Notifier Agent] Preparing Discord DM for {job.title}...")
         
-        # Create message
-        msg = MIMEMultipart()
-        msg['From'] = self.sender_email
-        msg['To'] = self.receiver_email
-        msg['Subject'] = f"New Job Match: {job.title} at {job.company}"
-
-        # Create HTML Body
-        desc_snippet = job.description[:500] + "..." if len(job.description) > 500 else job.description
-        html = f"""
-        <html>
-          <body>
-            <h2>Job Match: <a href="{job.application_link}">{job.title}</a></h2>
-            <p><strong>Company:</strong> {job.company}</p>
-            <p><strong>Location:</strong> {job.location}</p>
-            <p><strong>Salary:</strong> {job.salary}</p>
-            <br>
-            <p><strong>Description Snippet:</strong></p>
-            <p><i>{desc_snippet}</i></p>
-            <br>
-            <p>Job ID: {job.job_id}</p>
-            <p><a href="{job.application_link}"><strong>Apply Here</strong></a></p>
-          </body>
-        </html>
-        """
-        
-        msg.attach(MIMEText(html, 'html'))
-
         try:
-            # Connect and authenticate
-            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
-            server.starttls() 
-            server.login(self.sender_email, self.sender_password)
-            
-            # Send email
-            text = msg.as_string()
-            server.sendmail(self.sender_email, self.receiver_email, text)
-            server.quit()
-            
-            print("[Notifier Agent] Email sent successfully.")
+            # We must run the bot in a separate event loop since main.py is synchronous
+            asyncio.run(self._send_async_notification(job))
             return True
         except Exception as e:
-            print(f"[Notifier Agent] Failed to send email. Error: {e}")
+            print(f"[Notifier Agent] Failed during async execution: {e}")
             return False
