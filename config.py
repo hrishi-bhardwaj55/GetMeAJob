@@ -26,8 +26,12 @@ MATCH_CRITERIA = {
 }
 
 # 3. Notification Platform Configuration
-# Defaulting to Discord Webhook
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "YOUR_DISCORD_WEBHOOK_HERE")
+# Email SMTP Settings (Defaulting to Gmail)
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "YOUR_EMAIL@gmail.com")
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "YOUR_APP_PASSWORD") # Use an App Password if using Gmail
+RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL", "YOUR_RECEIVER_EMAIL@domain.com")
 
 # General Settings
 POLLING_INTERVAL_MINUTES = 60
