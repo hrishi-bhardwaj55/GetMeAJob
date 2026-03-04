@@ -15,7 +15,7 @@ JOB_PROFILES = [
         "criteria": {
             "required_skills": [],
             "preferred_skills": [],
-            "excluded_terms": []
+            "excluded_terms": ["part time", "part-time", "contract", "contractor", "fixed duration", "assistant", "legal"]
         }
     },
     {
@@ -26,7 +26,7 @@ JOB_PROFILES = [
         "criteria": {
             "required_skills": [],
             "preferred_skills": [],
-            "excluded_terms": []
+            "excluded_terms": ["part time", "part-time", "contract", "contractor", "fixed duration", "assistant", "legal"]
         }
     },
     {
@@ -37,7 +37,7 @@ JOB_PROFILES = [
         "criteria": {
             "required_skills": ["Python"],
             "preferred_skills": ["LLMs", "Agentic", "Prompt Engineering"],
-            "excluded_terms": [],
+            "excluded_terms": ["part time", "part-time", "contract", "contractor", "fixed duration", "assistant", "legal"],
             "threshold": 40.0
         }
     }

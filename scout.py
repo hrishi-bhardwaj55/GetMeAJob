@@ -33,7 +33,7 @@ class ScoutAgent:
     def _human_delay(self, min_sec=2, max_sec=5):
         time.sleep(random.uniform(min_sec, max_sec))
 
-    def fetch_jobs(self, keywords):
+    def fetch_jobs(self, keywords, location="United States"):
         """Scrapes LinkedIn for job listings matching keywords (Past 24 Hours, Most Recent)."""
         jobs_found = []
 
@@ -50,8 +50,9 @@ class ScoutAgent:
                 # sortBy=DD -> Most recent
                 params = {
                     "keywords": keyword,
-                    "location": config.SEARCH_LOCATION,
-                    "f_TPR": "r86400",
+                    "location": location,
+                    "f_TPR": "r7200",  # 7200 seconds = 2 hours
+                    "f_JT": "F",       # Full-time jobs only
                     "sortBy": "DD"
                 }
                 

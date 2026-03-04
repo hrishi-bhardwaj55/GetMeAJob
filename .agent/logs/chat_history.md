@@ -257,3 +257,16 @@ The AI bot's criteria required 'Python' and preferred 'LLMs', 'Agentic', and 'Pr
 - Updated `filter_jobs()` in `filter.py` to allow a profile-specific threshold.
 - Bound the AI/ML Bot to a 40.0% threshold in `config.py`.
 - Committed the bug fix resolving strict filtering bottlenecks.
+
+
+## [2026-03-04T12:15:58.105822]
+**User Input**:
+I need to modify the time. only show job posted within the last two hours. and there are many irrelevant jobs also. Legal assistant etc. i am only looking for full time roles. remove any which have part time or contract or fixed duration mentioned. and don't repeat the jobs.
+
+**Agent Reasoning**:
+The user wanted stricter scraping (last 2 hours, full-time only). I updated `scout.py` payload constraints (`f_TPR=r7200` and `f_JT=F`). To filter out noise like 'Legal assistant' or 'contract', I globally populated the `excluded_terms` array in `config.py` for every bot profile. Repetitions are already prevented natively via `jobs.db`.
+
+**Actions Taken**:
+- Modified `scout.py` to enforce `f_TPR=r7200` (2 hours).
+- Modified `scout.py` to enforce `f_JT=F` (Full-time only).
+- Added `['part time', 'contract', 'assistant', 'legal'...]` to all `JOB_PROFILES` excluded terms.
