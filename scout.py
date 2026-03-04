@@ -51,7 +51,7 @@ class ScoutAgent:
                 params = {
                     "keywords": keyword,
                     "location": location,
-                    "f_TPR": "r7200",  # 7200 seconds = 2 hours
+                    "f_TPR": "r3600",  # 3600 seconds = 1 hour
                     "f_JT": "F",       # Full-time jobs only
                     "sortBy": "DD"
                 }

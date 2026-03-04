@@ -22,6 +22,7 @@ def run_job_search(dry_run=False):
         keywords = profile.get("keywords", [])
         webhook = profile.get("webhook_url", "")
         criteria = profile.get("criteria", {})
+        location = profile.get("location", "United States")
         
         print(f"\n[System] --- Running Profile: {bot_name} ---")
         if not keywords or not webhook:
@@ -32,7 +33,7 @@ def run_job_search(dry_run=False):
         notifier = NotifierAgent(webhook, bot_name)
         
         # 1. Scout for jobs
-        all_found_jobs = scout.fetch_jobs(keywords)
+        all_found_jobs = scout.fetch_jobs(keywords, location=location)
         print(f"[System] {bot_name} Scout found {len(all_found_jobs)} total job cards.")
         
         # 2. Deduplicate
