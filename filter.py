@@ -8,22 +8,36 @@ import random
 class FilterAgent:
     def __init__(self, criteria_dict):
         self.criteria = criteria_dict
+        self._playwright = None
+        self._browser = None
+
+    def _start_browser(self):
+        from playwright.sync_api import sync_playwright
+        self._playwright = sync_playwright().start()
+        self._browser = self._playwright.chromium.launch(headless=True)
+
+    def _stop_browser(self):
+        if self._browser:
+            self._browser.close()
+        if self._playwright:
+            self._playwright.stop()
+        self._browser = None
+        self._playwright = None
 
     def _fetch_description(self, url):
-        """Fetches the full job description text from a job page URL"""
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page(
+        """Fetches the full job description text from a job page URL (reuses shared browser)"""
+        try:
+            page = self._browser.new_page(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             )
             try:
                 page.goto(url, wait_until="domcontentloaded")
-                time.sleep(random.uniform(2, 4))
+                time.sleep(random.uniform(1, 2))
                 
                 # Check for "show more" button
                 try:
                     page.click("button.show-more-less-html__button", timeout=2000)
-                    time.sleep(1)
+                    time.sleep(0.5)
                 except:
                     pass
                 
@@ -31,13 +45,13 @@ class FilterAgent:
                 soup = BeautifulSoup(content, "html.parser")
                 desc_div = soup.find("div", class_="show-more-less-html__markup")
                 desc_text = desc_div.get_text(" ", strip=True) if desc_div else soup.get_text(" ", strip=True)
-                
-                browser.close()
                 return desc_text
-            except Exception as e:
-                browser.close()
-                print(f"[Filter Agent] Error fetching description: {e}")
-                return ""
+            finally:
+                page.close()
+        except Exception as e:
+            print(f"[Filter Agent] Error fetching description: {e}")
+            return ""
+
 
     def evaluate_job(self, job):
         """
@@ -100,12 +114,27 @@ class FilterAgent:
         
         # Look for a custom threshold in the criteria, otherwise default to 80.0
         custom_threshold = float(self.criteria.get("threshold", 80.0))
-        
-        for job in jobs:
-            score = self.evaluate_job(job)
-            if score >= custom_threshold:
-                print(f"[Filter Agent] Match! {job.title} at {job.company} scored {score:.1f}% (Threshold: {custom_threshold}%)")
-                matched_jobs.append(job)
-            else:
-                print(f"[Filter Agent] Rejected {job.title} at {job.company} (Score: {score:.1f}% < {custom_threshold}%)")
+
+        # Only spin up a browser if we actually need to check descriptions
+        needs_fetch = (
+            self.criteria.get("required_skills") or
+            self.criteria.get("preferred_skills") or
+            self.criteria.get("excluded_terms")
+        )
+
+        if needs_fetch:
+            self._start_browser()
+
+        try:
+            for job in jobs:
+                score = self.evaluate_job(job)
+                if score >= custom_threshold:
+                    print(f"[Filter Agent] Match! {job.title} at {job.company} scored {score:.1f}% (Threshold: {custom_threshold}%)")
+                    matched_jobs.append(job)
+                else:
+                    print(f"[Filter Agent] Rejected {job.title} at {job.company} (Score: {score:.1f}% < {custom_threshold}%)")
+        finally:
+            if needs_fetch:
+                self._stop_browser()
+
         return matched_jobs
