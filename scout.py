@@ -75,9 +75,36 @@ class ScoutAgent:
                     self._human_delay(3, 7)
                     
                     # Scroll down to load more jobs (simulate human behavior)
-                    for _ in range(3):
-                        page.evaluate("window.scrollBy(0, document.body.scrollHeight/3);")
-                        self._human_delay(1, 3)
+                    # Keep scrolling until no new jobs are loaded, exhausting the "Past Hour" feed
+                    previous_job_count = 0
+                    stagnant_scrolls = 0
+                    max_scrolls = 50 # Hard cap just to prevent true infinite loops
+                    
+                    for current_scroll in range(max_scrolls):
+                        page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+                        self._human_delay(1, 2)
+                        
+                        # Try to click the "See more jobs" button if it appears
+                        try:
+                            # LinkedIn uses various classes for this button over time
+                            see_more_btn = page.query_selector("button.infinite-scroller__show-more-button")
+                            if see_more_btn and see_more_btn.is_visible():
+                                see_more_btn.click()
+                                self._human_delay(1, 2)
+                        except Exception:
+                            pass
+                        
+                        # Verify if scrolling actually loaded new items in the DOM
+                        current_job_count = page.locator("div.base-card").count()
+                        if current_job_count <= previous_job_count:
+                            stagnant_scrolls += 1
+                            # If we scroll 3 times and no new jobs appear, we've hit the bottom or an auth-wall
+                            if stagnant_scrolls >= 3:
+                                print(f"[Scout Agent] Reached bottom of feed or auth-wall after {current_scroll} scrolls.")
+                                break
+                        else:
+                            stagnant_scrolls = 0  # Reset
+                            previous_job_count = current_job_count
                         
                     content = page.content()
                     soup = BeautifulSoup(content, "html.parser")
