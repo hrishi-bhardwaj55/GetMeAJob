@@ -64,11 +64,12 @@ class AiFilterAgent:
         - STRICT Excluded Terms/Red Flags: {', '.join(exclusions) if exclusions else 'None'}
         
         ABSOLUTE RULES FOR APPROVAL (is_match):
-        1. THE ONLY REASON TO REJECT: You MUST set `is_match = False` ONLY if the job description explicitly mentions or clearly implies ANY of the STRICT Excluded Terms (e.g., 'US Citizen', 'Clearance', 'Internship', 'Part time').
-        2. NEVER REJECT FOR EXPERIENCE: Even if a job asks for 8, 10, or 15+ years of experience, YOU MUST SET `is_match = True`. Do NOT filter out senior roles. The candidate's CMU Master's prepares them for these.
-        3. NEVER REJECT FOR SKILLS: Even if the candidate is completely missing required skills (e.g., Angular, Rust, AWS), YOU MUST SET `is_match = True`. Do NOT filter out jobs based on missing tech stack.
-        4. GAP ANALYSIS: Use the 'missing_from_resume' field to highlight what the resume lacks (e.g., "Requires 8 years of experience and Angular"). This is where you note discrepancies—do NOT reject the job because of them. Keep it to 1-2 punchy sentences. Put 'None' if they are a perfect match.
-        5. SCORING: If it passes rule #1, give it a high match_score (70-100), regardless of missing skills or experience gaps.
+        1. THE ONLY REASON TO REJECT: You MUST set `is_match = False` ONLY if the job description EXPLICITLY AND LITERALLY mentions ANY of the STRICT Excluded Terms (e.g., 'US Citizen', 'Clearance Required', 'Internship', 'Part time').
+        2. DO NOT INFER CITIZENSHIP: If a job says "Must be legally authorized to work in the US", that DOES NOT mean "US Citizen Only". Do NOT reject the job unless it says "US Citizen ONLY" or "No Corp-to-Corp/Sponsorship". If it mentions EAD, H1B, or OPT, let it pass!
+        3. NEVER REJECT FOR EXPERIENCE: Even if a job asks for 8, 10, or 15+ years of experience, YOU MUST SET `is_match = True`. Do NOT filter out senior roles. The candidate's CMU Master's prepares them for these.
+        4. NEVER REJECT FOR SKILLS: Even if the candidate is completely missing required skills (e.g., Angular, Rust, AWS), YOU MUST SET `is_match = True`. Do NOT filter out jobs based on missing tech stack.
+        5. GAP ANALYSIS: Use the 'missing_from_resume' field to highlight what the resume lacks (e.g., "Requires 8 years of experience and Angular"). This is where you note discrepancies—do NOT reject the job because of them. Keep it to 1-2 punchy sentences. Put 'None' if they are a perfect match.
+        6. SCORING: If it passes rules #1 and #2, give it a high match_score (70-100), regardless of missing skills or experience gaps.
         
         JOB DESCRIPTION:
         {description}
