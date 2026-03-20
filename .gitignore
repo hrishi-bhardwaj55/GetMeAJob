@@ -17,3 +17,4 @@ jobs_output.txt
 .idea/
 .DS_Store
 Thumbs.db
+*.json

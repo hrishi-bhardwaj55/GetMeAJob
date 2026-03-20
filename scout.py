@@ -38,10 +38,8 @@ class ScoutAgent:
     def _human_delay(self, min_sec=2, max_sec=5):
         time.sleep(random.uniform(min_sec, max_sec))
 
-    def fetch_jobs(self, keywords, location="United States"):
-        """Scrapes LinkedIn for job listings matching keywords (Past 24 Hours, Most Recent)."""
+    def _fetch_keyword_jobs(self, keyword, location):
         jobs_found = []
-
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(
@@ -50,71 +48,110 @@ class ScoutAgent:
             )
             page = context.new_page()
 
-            for keyword in keywords:
-                # f_TPR=r86400 -> Past 24 hours
-                # sortBy=DD -> Most recent
-                params = {
-                    "keywords": keyword,
-                    "location": location,
-                    "f_TPR": "r3600",  # 3600 seconds = 1 hour
-                    "f_JT": "F",       # Full-time jobs only
-                    "sortBy": "DD"
-                }
+            params = {
+                "keywords": keyword,
+                "location": location,
+                "f_TPR": "r1800",  # Past 30 mins
+                "f_JT": "F",       # Full-time jobs only
+                "sortBy": "DD"
+            }
+            
+            # Append exact geoId for United States to prevent international contamination
+            if "united states" in location.lower() or location.lower() == "us":
+                params["geoId"] = "103644278"
+            
+            query_string = urllib.parse.urlencode(params)
+            search_url = f"{self.base_url}{query_string}"
+            
+            print(f"[Scout Agent] Searching for: '{keyword}' (Past 30 mins)...")
+            
+            try:
+                page.goto(search_url, wait_until="domcontentloaded")
+                self._human_delay(3, 7)
                 
-                # Append exact geoId for United States to prevent international contamination
-                if "united states" in location.lower() or location.lower() == "us":
-                    params["geoId"] = "103644278"
+                # Scroll down to load more jobs (simulate human behavior)
+                previous_job_count = 0
+                stagnant_scrolls = 0
+                max_scrolls = 50 
                 
-                query_string = urllib.parse.urlencode(params)
-                search_url = f"{self.base_url}{query_string}"
+                for current_scroll in range(max_scrolls):
+                    page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+                    self._human_delay(1, 2)
+                    
+                    try:
+                        see_more_btn = page.query_selector("button.infinite-scroller__show-more-button")
+                        if see_more_btn and see_more_btn.is_visible():
+                            see_more_btn.click()
+                            self._human_delay(1, 2)
+                    except Exception:
+                        pass
+                    
+                    current_job_count = page.locator("div.base-card").count()
+                    if current_job_count <= previous_job_count:
+                        stagnant_scrolls += 1
+                        if stagnant_scrolls >= 3:
+                            print(f"[Scout Agent] '{keyword}' reached bottom of feed or auth-wall after {current_scroll} scrolls.")
+                            break
+                    else:
+                        stagnant_scrolls = 0  
+                        previous_job_count = current_job_count
+                    
+                content = page.content()
+                soup = BeautifulSoup(content, "html.parser")
                 
-                print(f"[Scout Agent] Searching for: '{keyword}'...")
+                job_cards = soup.find_all("div", class_="base-card")
                 
-                try:
-                    page.goto(search_url, wait_until="domcontentloaded")
-                    self._human_delay(3, 7)
-                    
-                    # Scroll down to load more jobs (simulate human behavior)
-                    for _ in range(3):
-                        page.evaluate("window.scrollBy(0, document.body.scrollHeight/3);")
-                        self._human_delay(1, 3)
+                print(f"[Scout Agent] Found {len(job_cards)} job cards for '{keyword}'. Extracting details...")
+                
+                for card in job_cards:
+                    job_id = card.get("data-entity-urn", "").split(":")[-1]
+                    if not job_id:
+                        continue
                         
-                    content = page.content()
-                    soup = BeautifulSoup(content, "html.parser")
+                    title_el = card.find("h3", class_="base-search-card__title")
+                    company_el = card.find("h4", class_="base-search-card__subtitle")
+                    location_el = card.find("span", class_="job-search-card__location")
+                    salary_el = card.find("span", class_="job-search-card__salary-info")
+                    link_el = card.find("a", class_="base-card__full-link")
+                    time_el = card.find("time")
                     
-                    job_cards = soup.find_all("div", class_="base-card")
+                    title = title_el.text.strip() if title_el else "Unknown Title"
+                    company = company_el.text.strip() if company_el else "Unknown Company"
+                    location = location_el.text.strip() if location_el else "Unknown Location"
+                    salary = salary_el.text.strip() if salary_el else "Not Listed"
+                    link = link_el["href"].split("?")[0] if link_el and "href" in link_el.attrs else ""
                     
-                    print(f"[Scout Agent] Found {len(job_cards)} job cards for '{keyword}'. Extracting details...")
+                    posted_time_text = time_el.get_text(strip=True) if time_el else None
                     
-                    for card in job_cards:
-                        job_id = card.get("data-entity-urn", "").split(":")[-1]
-                        if not job_id:
-                            continue
-                            
-                        title_el = card.find("h3", class_="base-search-card__title")
-                        company_el = card.find("h4", class_="base-search-card__subtitle")
-                        location_el = card.find("span", class_="job-search-card__location")
-                        salary_el = card.find("span", class_="job-search-card__salary-info")
-                        link_el = card.find("a", class_="base-card__full-link")
-                        time_el = card.find("time")
-                        
-                        title = title_el.text.strip() if title_el else "Unknown Title"
-                        company = company_el.text.strip() if company_el else "Unknown Company"
-                        location = location_el.text.strip() if location_el else "Unknown Location"
-                        salary = salary_el.text.strip() if salary_el else "Not Listed"
-                        link = link_el["href"].split("?")[0] if link_el and "href" in link_el.attrs else ""
-                        
-                        # Use LinkedIn's own relative time text (e.g. "32 minutes ago")
-                        # The datetime attribute only has the date, not the time, so we avoid it.
-                        posted_time_text = time_el.get_text(strip=True) if time_el else None
-                        
-                        jobs_found.append(Job(job_id, title, company, location, link, salary, description="", posted_time_text=posted_time_text))
-                        
-                except Exception as e:
-                    print(f"[Scout Agent] Error fetching jobs for {keyword}: {e}")
+                    jobs_found.append(Job(job_id, title, company, location, link, salary, description="", posted_time_text=posted_time_text))
                     
-                self._human_delay(5, 10) # Delay between keywords
+            except Exception as e:
+                print(f"[Scout Agent] Error fetching jobs for {keyword}: {e}")
                 
             browser.close()
             
         return jobs_found
+
+    def fetch_jobs(self, keywords, location="United States"):
+        """Scrapes LinkedIn for job listings matching keywords (Past 30 mins) in parallel."""
+        all_jobs_found = []
+        import concurrent.futures
+        
+        # Max out workers at the number of keywords or a sensible limit (e.g. 10) to not overload machine
+        max_workers = min(len(keywords), 10) 
+        if max_workers == 0:
+            return all_jobs_found
+            
+        print(f"[Scout Agent] Launching {max_workers} thread(s) for parallel keyword scraping...")
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_keyword = {executor.submit(self._fetch_keyword_jobs, kw, location): kw for kw in keywords}
+            for future in concurrent.futures.as_completed(future_to_keyword):
+                kw = future_to_keyword[future]
+                try:
+                    jobs = future.result()
+                    all_jobs_found.extend(jobs)
+                except Exception as exc:
+                    print(f"[Scout Agent] Thread for keyword '{kw}' generated an exception: {exc}")
+                    
+        return all_jobs_found

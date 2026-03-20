@@ -82,12 +82,22 @@ class NotifierAgent:
                 skills_text += f" +{len(skills) - 15} more"
             embed.add_embed_field(name="🛠 Skills Detected", value=skills_text, inline=False)
 
-        # ── Description snippet ───────────────────────────────────────────────
+        # ── AI Summary & Description ──────────────────────────────────────────
+        ai_summary = getattr(job, "job_summary", "")
+        if ai_summary and "Error" not in ai_summary and "Could not fetch" not in ai_summary:
+            embed.add_embed_field(name="✨ AI Summary", value=ai_summary, inline=False)
+            
+        ai_gap = getattr(job, "missing_from_resume", "")
+        if ai_gap and ai_gap.lower() not in ["none", "n/a", "none.", "n/a."]:
+            embed.add_embed_field(name="🎯 Resume Gap", value=f"_{ai_gap}_", inline=False)
+
         desc = getattr(job, "description", "") or ""
-        if desc and desc != "Description unavailable (LinkedIn blocked fetch)":
+        desc_blocked = (desc == "Description unavailable (LinkedIn blocked fetch)" or "Could not fetch" in ai_summary)
+
+        if desc and not desc_blocked and not ai_summary:
             snippet = desc[:300] + "…" if len(desc) > 300 else desc
             embed.add_embed_field(name="📄 Description", value=snippet, inline=False)
-        elif desc == "Description unavailable (LinkedIn blocked fetch)":
+        elif desc_blocked:
             embed.add_embed_field(name="📄 Description", value="⚠️ LinkedIn blocked the description fetch — click to view.", inline=False)
 
         embed.set_footer(text=f"Job ID: {job.job_id}")

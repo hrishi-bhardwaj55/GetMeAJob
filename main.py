@@ -25,15 +25,27 @@ def run_profile(profile, dry_run=False):
     print(f"\n[System] ▶ Starting Profile: {bot_name}")
 
     scout = ScoutAgent()
-    filter_agent = FilterAgent(criteria, max_workers=5)
+    
+    if profile.get("use_ai", False):
+        from ai_filter import AiFilterAgent
+        filter_agent = AiFilterAgent(criteria, max_workers=5, api_key=getattr(config, "OPENAI_API_KEY", ""))
+
+    else:
+        filter_agent = FilterAgent(criteria, max_workers=5)
+        
     notifier = NotifierAgent(webhook, bot_name)
 
     # 1. Scout
     all_found_jobs = scout.fetch_jobs(keywords, location=location)
     print(f"[System] {bot_name} → Scout found {len(all_found_jobs)} job cards.")
 
-    # 2. Deduplicate
-    new_jobs = [job for job in all_found_jobs if not db.is_job_processed(job.job_id)]
+    # 2. Deduplicate against DB & within current batch
+    unique_new_jobs = {}
+    for job in all_found_jobs:
+        if job.job_id not in unique_new_jobs and not db.is_job_processed(job.job_id):
+            unique_new_jobs[job.job_id] = job
+            
+    new_jobs = list(unique_new_jobs.values())
     print(f"[System] {bot_name} → {len(new_jobs)} new unseen jobs after deduplication.")
 
     if not new_jobs:
@@ -45,7 +57,15 @@ def run_profile(profile, dry_run=False):
     print(f"[System] {bot_name} → {len(matched_jobs)} jobs matched criteria.")
 
     # 4. Notify & DB Write
-    sent, rejected = 0, 0
+    sent, notify_failed = 0, 0
+    matched_job_ids = {job.job_id for job in matched_jobs}
+    
+    # Mark rejected/skipped jobs as processed so we don't fetch and re-evaluate them on the next run
+    if not dry_run:
+        for job in new_jobs:
+            if job.job_id not in matched_job_ids:
+                db.mark_job_processed(job.job_id)
+
     for job in matched_jobs:
         if not dry_run:
             success = notifier.send_notification(job)
@@ -53,16 +73,18 @@ def run_profile(profile, dry_run=False):
                 db.mark_job_processed(job.job_id)
                 sent += 1
             else:
-                rejected += 1
+                notify_failed += 1
         else:
-            print(f"[Dry Run] {bot_name} → Would notify: {job.title} at {job.company}")
+            summary = getattr(job, "job_summary", "Regex Passed")
+            gap = getattr(job, "missing_from_resume", "None") 
+            print(f"[Dry Run] {bot_name} → Would notify: {job.title} at {job.company} | AI Summary: {summary[:50]} | Gap: {gap[:50]}...")
             sent += 1
 
     # Jobs that were found but didn't match criteria
     skipped = len(new_jobs) - len(matched_jobs)
 
     if not dry_run:
-        notifier.send_summary(sent=sent, rejected=rejected, skipped=skipped)
+        notifier.send_summary(sent=sent, rejected=notify_failed, skipped=skipped)
 
     print(f"[System] ✅ {bot_name} complete.")
 
